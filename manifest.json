@@ -1,0 +1,33 @@
+{
+    "manifest_version": 3,
+    "name": "derpic",
+    "version": "1.0",
+    "description": "derpic but extension",
+    "permissions": [
+      "clipboardWrite",
+      "activeTab",
+      "storage",
+      "cookies",
+      "http://*/",
+      "https://*/"
+    
+    ],
+    "action": {
+      "default_popup": "derpic-login.html",
+      "default_icon": {
+        "16": "icons/derpic-logo-2.0.png",
+        "48": "icons/derpic-logo-2.0.png",
+        "128": "icons/derpic-logo-2.0.png"
+      },
+    "default_popup_width": 500,
+    "default_popup_height": 500
+    },
+
+    "host_permissions": [
+    "https://i.dev.alv.cx/*"
+    ],
+      "content_security_policy": {
+        "extension_pages": "script-src 'self'; object-src 'self'"
+      }
+
+}
