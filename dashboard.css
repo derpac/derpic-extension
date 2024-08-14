@@ -838,7 +838,7 @@ input[type=number]::-webkit-outer-spin-button {
 .main{
     
     height: 70vh;
-    width: 100vw;
+    width: 384px;
     padding: 1em;
 }
 .pages-info{

@@ -753,7 +753,7 @@ function copyURL() {
         if (widthpx && heightpx && rotationdeg) {
             let copyURL = `https://i.dev.alv.cx/i/${slug}?rotation=${rotationdeg}&width=${widthpx}&height=${heightpx}&flipv=${flipvBool}&fliph=${fliphBool}`;
             navigator.clipboard.writeText(copyURL).then(function () {
-                alert("URL copied to clipboard");
+                copyPopup();
             }, function (err) {
                 console.error("Could not copy text: ", err);
             });
@@ -763,7 +763,7 @@ function copyURL() {
     } else {
         let copyURL = `https://i.dev.alv.cx/i/${slug}`;
         navigator.clipboard.writeText(copyURL).then(function () {
-            alert("URL copied to clipboard");
+            copyPopup();
         }, function (err) {
             console.error("Could not copy text: ", err);
         });
@@ -811,4 +811,25 @@ function calculateWidth(originWidth, widthIn){
 function calculateHeight(originHeight, heightIn){
     let percentageHeight = Math.ceil(originHeight * heightIn/100);
     return percentageHeight;
+}
+
+function copyPopup(){
+    const gridContainer = document.querySelector('.copy-area');
+    const copyPop = document.createElement("p");
+    copyPop.classList.add("copyPopup");
+    if (gridContainer.querySelector(".copyPopup")){
+        return
+    }
+    else{
+
+    
+    const copyPop = document.createElement("p");
+    copyPop.classList.add("copyPopup");
+    copyPop.textContent = "URL Copied"
+    gridContainer.appendChild(copyPop);
+
+    setTimeout(() => {
+        gridContainer.removeChild(copyPop);
+    }, 1000);
+}
 }
