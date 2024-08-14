@@ -7,6 +7,13 @@
     <link rel="stylesheet" href="dashboard.css">
 </head>
 <body>
+    <div id="confirmationModal" class="modal">
+        <div class="modal-content" id="modal-content">
+            <p>Delete multiple images?</p>
+            <button id="confirmDelete" class="button confirm">Yes</button>
+            <button id="cancelDelete" class="button cancel">No</button>
+        </div>
+    </div>
     <header>
         <div class="head-grid">
         <h1>derpic</h1>
@@ -39,10 +46,10 @@
              <div class="info-area" id="info-area"><pre id="metadata" class="bold-font">File Name:<br>File Size:<br>File Type:<br>Image Width:<br>Image Height:</pre></div>
              <div class="toolbar">
                 <div class="tools">
-                    <label class="meta-checkbox-container">
+                    <!-- <label class="meta-checkbox-container">
                         <input type="checkbox" id="meta-checkbox" checked>
                         <span class="meta-checkbox-text"></span>
-                    </label>
+                    </label> -->
                       
                     <button class="button" id="uploadButton" disabled>upload</button>
 
@@ -59,6 +66,15 @@
             </div>
         </section>
     </main>
+    <footer>
+        <div class="footer-flex" id="footer">
+            <a href = "/dash/derpic-about/">about</a>
+          
+            <a href = "/dash/derpic-contact/">contact</a>
+          
+            <!-- <a href = "/dash/derpic-privacy/">privacy</a> -->
+        </div>
+    </footer>
 <!-- <script src="https://cdn.jsdelivr.net/npm/exif-js"></script> -->
 <script src="dashboard.js"></script>
 <script src="font-awesome.js" crossorigin="anonymous"></script>

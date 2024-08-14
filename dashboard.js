@@ -4,60 +4,84 @@ const username = getCookie("user");
 const apiKey = `${token}`;
 const apiUrl = 'https://i.dev.alv.cx/i';
 
-const dropArea = document.getElementById("drop-area");
+const dropArea = document.getElementById("drop-area");    // setting global areas and variables
 const inputFile = document.getElementById("input-img");
 const imageView = document.getElementById("img-view");
 
+let selectedItems = [];
+let clickedItem = null;
 let selectedItem = null;
 let slug = "";
 let liveSlug = "";
+const confirmationModal = document.getElementById('confirmationModal');
+const confirmDeleteBtn = document.getElementById('confirmDelete');
+const cancelDeleteBtn = document.getElementById('cancelDelete');
 
-
-loadGallery();
-
+loadGallery();      // calls load gallery before anything.
 // Load Gallery
 function loadGallery() {
     const requestOptions = {
         method: 'GET',
         headers: {
-            'X-Derpic-Token': `${apiKey}`
-        }
-    };
-
-    fetch(apiUrl, requestOptions)
+            'X-Derpic-Token': `${apiKey}`,
+            // 'origin': 'any-random-text'
+        },
+        };
+    
+        fetch(apiUrl, requestOptions)
         .then(response => {
             if (!response.ok) {
-                window.location.href = "/derpic-login.html";
-                throw new Error('Network response was not ok');
+            window.location.href = "/dash/login";
+            throw new Error('Network response was not ok');
+           
             }
             return response.json();
         })
         .then(data => {
-            const galleryGrid = document.getElementById('galleryGrid');
-            galleryGrid.innerHTML = "";
-            data.forEach(item => {
-                const imgDataStorage = `https://i.dev.alv.cx/i/${item.slug}`;
+            document.getElementById('galleryGrid').innerHTML = ""
+            for(let i = 0; i < data.length; i++){
+                imgDataStorage = `${apiUrl}/${data[i].slug}`     //using the token iterates through the data and displays the images in the gallery hosted from the backend
                 const img = document.createElement('img');
                 img.src = imgDataStorage;
                 img.className = "galleryImg";
-
                 const cell = document.createElement('div');
                 cell.className = 'grid-item';
-                cell.id = `grid-item-slug-${item.slug}`;
-                cell.appendChild(img);
-
-                galleryGrid.appendChild(cell);
-            });
+                cell.id = `grid-item-slug-${data[i].slug}`;
+                const spinner = document.createElement('div');
+                spinner.className = 'loading-spinner';
+    
+                cell.appendChild(spinner);
+                document.getElementById('galleryGrid').appendChild(cell);
+                // Once the image is loaded, remove the spinner and add the image to the cell
+                img.onload = function() {
+                    spinner.remove();
+                    cell.appendChild(img);
+                };
+    
+                // Handle image loading error
+                img.onerror = function() {
+                    spinner.remove();
+                    cell.innerHTML = '<p>Failed to load image</p>';
+                };
+                selectedItems = [];
+            }
+            
+            
+            
         })
-        .catch(error => console.error('Error:', error));
-}
-
+        .catch(error => {
+            console.error('Error:', error);
+        });
+    }
 // Upload Image
 function uploadImageAPI() {
-    console.log();
-    const file = inputFile.files[0];
-    if (file) {
-        const requestOptions = {
+      selectedItems = [];
+        
+        const file = inputFile.files[0];
+        console.log(`Selected file: ${file.name}, type: ${file.type}, size: ${file.size} bytes`);
+        if (file) {
+
+            const requestOptions = {
             method: 'POST',
             headers: {
                 'Accept': 'application/json',
@@ -65,29 +89,39 @@ function uploadImageAPI() {
                 'Content-Type': 'application/octet-stream'
             },
             body: file
-        };
+            };
 
-        fetch(apiUrl, requestOptions)
+            fetch(apiUrl, requestOptions)
             .then(response => {
                 if (!response.ok) {
-                    throw new Error('Network response was not ok');
+                throw new Error('Network response was not ok');
                 }
                 return response.json();
             })
             .then(data => {
+
+                selectedItems = [];
+                document.querySelectorAll('.grid-item.selected').forEach(item => item.classList.remove('selected'));
+
+                console.log(data);
                 loadGallery();
                 localStorage.removeItem('imageData');
                 document.getElementById('uploadButton').disabled = true;
                 document.getElementById('input-img').value = '';
                 resetDropArea();
-                displayMetadata();
-                document.getElementById('metadata').innerHTML = "File Name:<br>File Size:<br>File Type:<br>Image Width:<br>Image Height:";
+                const metadataElement = document.getElementById('metadata');
+                metadataElement.innerHTML = "File Name:<br>File Size:<br>File Type:<br>Image Width:<br>Image Height:";
+                
             })
-            .catch(error => console.error('Error:', error));
-    } else {
-        console.error("No file selected");
+            .catch(error => {
+                console.error('Error:', error);
+            });
+        }
+        else{
+            console.error("No file selected");
+        }
+        
     }
-}
 
 // Delete Image
 function deleteImageAPI() {
@@ -124,21 +158,23 @@ function deleteImageAPI() {
 //----------Displays the file info on input-----------
 
 
-
-function clearDisplayCopyImg() {
-    const copyArea = document.querySelector(".copy-area");
-    copyArea.innerHTML = "";
+function clearDisplayCopyImg(){
+    const gridContainer = document.querySelector('.copy-area');
+    gridContainer.innerHTML = "";
 }
 
 inputFile.addEventListener("change", uploadImage);
+
 
 document.getElementById('input-img').addEventListener('change', function(event) {
     const file = event.target.files[0];
     if (file) {
         document.getElementById('uploadButton').disabled = false;
         const fileInfo = document.getElementById('metadata');
+        
+      
         fileInfo.textContent = `File Name: ${file.name}\nFile Size: ${file.size} bytes\nFile Type: ${file.type}`;
-
+        
         const reader = new FileReader();
         reader.onload = function(e) {
             const img = new Image();
@@ -147,6 +183,8 @@ document.getElementById('input-img').addEventListener('change', function(event) 
             };
             img.src = e.target.result;
             localStorage.setItem("imageData", e.target.result);
+            
+          
         };
         reader.readAsDataURL(file);
     }
@@ -157,11 +195,9 @@ document.getElementById('uploadButton').addEventListener('click', uploadImageAPI
 
 
 
-function uploadImage() {
-    console.log("Upload");
-    selectedItem = null;
+function uploadImage(){
     slug = "";
-
+    clearDisplayCopyImg();
     let imgLink = URL.createObjectURL(inputFile.files[0]);
     imageView.textContent = "";
     const pic = document.createElement("div");
@@ -173,16 +209,10 @@ function uploadImage() {
     imageView.appendChild(pic);
     imageView.style.border = 0;
 
-    clearDisplayCopyImg();
 }
 
 
 // ---------- display metadata (file info) when upload -------
-function displayMetadata() {
-    const metadata = document.getElementById("metadata");
-    metadata.style.display = "block";
-}
-
 // ---------- async function to get selcted img blob and display info such as slug -------------
 async function getImageFile() {
     const imgElement = document.getElementById('imgElement');
@@ -197,13 +227,26 @@ async function getImageFile() {
                 throw new Error('Network response was not ok');
             }
             const blob = await response.blob();
-
+            console.log(blob);
             const urlParts = imgUrl.split('/');
             const filename = urlParts[urlParts.length - 1];
 
             const file = new File([blob], filename, { type: blob.type });
 
-            metadataElement.textContent = `Slug: ${file.name}\nFile Size: ${file.size} bytes\nFile Type: ${file.type}`;
+            // Create a temporary image element to get the dimensions
+            const tempImg = new Image();
+            tempImg.src = imgUrl;
+            tempImg.onload = () => {
+                const width = tempImg.width;
+                const height = tempImg.height;
+                
+                metadataElement.textContent = `Slug: ${file.name}\nFile Size: ${file.size} bytes\nFile Type: ${file.type}\nImage Width: ${width}px\nImage Height: ${height}px`;
+            };
+            
+            tempImg.onerror = () => {
+                console.error('Error loading image for dimensions');
+                metadataElement.textContent = `Slug: ${file.name}\nFile Size: ${file.size} bytes\nFile Type: ${file.type}\nImage Width: Error \nImage Height: Error`;
+            };
         } catch (error) {
             console.error('Error fetching image:', error);
             metadataElement.textContent = 'Error fetching image';
@@ -224,36 +267,59 @@ const rightArea = document.getElementById("right-area");
 const inputArea = document.getElementById("input-area");
 const gridItem = document.getElementById("grid-item");
 const profileArea = document.getElementById("profile-area");
-
+const modalContent = document.getElementById("modal-content");
+const footerArea = document.getElementById("footer");
+theme();
 document.addEventListener('DOMContentLoaded', (event) => {
     const nightCheckbox = document.getElementById('night-checkbox');
 
     nightCheckbox.addEventListener('change', function() {
         if (nightCheckbox.checked) {
-            lightMode();
+            // lightMode();
+            deleteCookie("theme");
+            document.cookie = "theme=light; path=/; SameSite = Strict`";
+            theme();
+            
+            //set lightmode cookie
+            //delete night cookie
         }
         else{
-            nightMode();
+            // nightMode();
+            deleteCookie("theme");
+            document.cookie = "theme=night; path=/; SameSite = Strict`";
+            // set night cookie
+            // delete light cookie
+            theme();
         } 
         });
     });
 // ----------------- night and light mode ------------------//
 
-function nightMode(){
-    document.body.style = "color: #f2f2f2; background-color: #282828";
-    leftArea.style = "background-color: #383838";
-    rightArea.style = "background-color: #282828; border-color: #383838";
-    inputArea.style = "background-color: #383838 ;color: #f2f2f2;";
-    profileArea.style = "background-color: #383838; color: #f2f2f2"
-}
-
-function lightMode(){
-    console.log("light");
-    document.body.style = "color: #282828";
-    leftArea.style = "background-color: #e8e8e8";
-    rightArea.style = "background-color: #f2f2f2";                              // setting dark and light mode (super botch but cba to change)
-    inputArea.style = "background-color: #e8e8e8 ;color: #282828;";
-    profileArea.style = "background-color: #e8e8e8; color: #282828"
+function theme(){
+    const nightCheckbox = document.getElementById('night-checkbox');
+    let theme = getCookie("theme");
+    if(theme === "light"){
+        nightCheckbox.checked = true;
+        document.body.style = "color: #282828";
+        leftArea.style = "background-color: #e8e8e8";
+        rightArea.style = "background-color: #f2f2f2";                              // setting dark and light mode (super botch but cba to change)
+        inputArea.style = "background-color: #e8e8e8 ;color: #282828;";
+        profileArea.style = "background-color: #e8e8e8; color: #282828";
+        modalContent.style = "background-color: #e8e8e8";
+    
+        footerArea.style = "background-color: #e8e8e8; color: #585858"
+    }
+    else if(theme === "night"){
+        nightCheckbox.checked = false;
+        document.body.style = "color: #f2f2f2; background-color: #282828";
+        leftArea.style = "background-color: #383838";
+        rightArea.style = "background-color: #282828; border-color: #383838";
+        inputArea.style = "background-color: #383838 ;color: #f2f2f2;";
+        profileArea.style = "background-color: #383838; color: #f2f2f2";
+        modalContent.style = "background-color: #383838";
+    
+        footerArea.style = "background-color: #383838; color: #a8a8a8";
+    }
 }
 
 // --------------------------- DELETE FUNCTIONALITY--------//
@@ -263,90 +329,130 @@ function lightMode(){
     document.addEventListener('DOMContentLoaded', () => {
         const grid = document.getElementById('galleryGrid');
         const deleteBtn = document.getElementById('deleteButton');
-        let selectedItem = null;
+        selectedItems = [];
     
- 
         grid.addEventListener('click', function(event) {
             if (event.target.classList.contains('grid-item') || event.target.closest('.grid-item')) {
-                let previouslySelectedItem = document.querySelector('.grid-item.selected');
-                selectedItem = event.target.closest('.grid-item');
-                if (event.target.closest(".selected")) {
-        
-                    selectedItem.classList.remove('selected');
-                    selectedItem = null;
-                    document.getElementById('deleteButton').disabled = true;
+                clickedItem = event.target.closest('.grid-item');
+                const slugId = clickedItem.id;
+                const parts = slugId.split("-");
+                const slug = parts.slice(3).join("-");
+    
+                if (clickedItem.classList.contains('selected')) {
+                    clickedItem.classList.remove('selected');
+                    selectedItems = selectedItems.filter(item => item !== slug);
+                    if (selectedItems.length === 0) {
+                        document.getElementById('deleteButton').disabled = true;
+                    }
+                } else {
+                    clickedItem.classList.add('selected');
+                    selectedItems.push(slug);
+                    document.getElementById('deleteButton').disabled = false;
+                }
+    
+                console.log(selectedItems);
+                
+                if (selectedItems.length > 0) {
+                    selectedPopup();
+                    getImageFile();
+                } else {
                     clearSelectedPopup();
                     clearDisplayCopyImg();
                 }
-                else if (!event.target.closest(".selected")){
-                    
-                    if (previouslySelectedItem) {
-                        previouslySelectedItem.classList.remove('selected');
-                    }
-                    selectedItem = event.target.closest('.grid-item');
-                    selectedItem.classList.add('selected');
-                    const slugId = selectedItem.id;
-                    const parts = slugId.split("-");
-                    slug = parts.slice(3).join("-");
-                    console.log(slug);
-                    selectedPopup();
-                    getImageFile();
-                    clearDisplayCopyImg();
-                    displayCopyImg();
-                    document.getElementById('deleteButton').disabled = false;
-                    
-                }
-
-
-
-                // ---------- send the selected photo to the img-veiw window
-              
-                // ----------
             }
+            slug = selectedItems[0];
         });
-
+    
 // ----------- selected item popup -------------//
 
 function selectedPopup(){
-    document.getElementById('uploadButton').disabled = true;
-    let imgElement = selectedItem.children[0];
-    let imgLink = imgElement.getAttribute('src');
-    imageView.textContent = "";
-    imageView.style.border = 0;
-    const pic = document.createElement("div");
-    pic.className = "mainPic";
-    pic.id = "mainPic";
-    let picture = document.createElement("img");
-    picture.id = "imgElement";
-    picture.src = imgLink;
-    pic.appendChild(picture);
+    if(selectedItems.length === 1){
+        clearDisplayCopyImg();
+        displayCopyImg();
+        console.log("one");
+        document.getElementById('uploadButton').disabled = true;
+
+        imageView.textContent = "";
+        imageView.style.border = 0;
+
+        const spinner = document.createElement("div");
+        spinner.className = "loading-spinner";
+        imageView.appendChild(spinner);
+
+        const pic = document.createElement("div");
+        pic.className = "mainPic";
+        pic.id = "mainPic";
+
+        let picture = document.createElement("img");
+        picture.id = "imgElement";
+        picture.src = `${apiUrl}/${selectedItems[0]}`;
+        
+        picture.onload = function() {
+       
+            imageView.removeChild(spinner);
     
-    imageView.appendChild(pic);
+          
+            pic.appendChild(picture);
+            imageView.appendChild(pic);
+        };
+    }
+    else if(selectedItems.length > 1){  
+        clearSelectedPopup();
+        clearDisplayCopyImg();
+        console.log("multi");
+        document.getElementById('uploadButton').disabled = true;
+        imageView.innerHTML = "<i class='fa-regular fa-images' style='font-size: 150px'></i><p>Multiple images selected</p>";
+    }
     
 }
 // -------------- selected popup from slug -------------
 
 // delete button function calls the deleteImageAPI and resets the area and selected item.
 deleteBtn.addEventListener('click', function() {
-    if (selectedItem) {
-        grid.removeChild(selectedItem);
-        selectedItem = null;
+    if(selectedItems.length === 0){
+        alert("Select img to delete");
+    }
+    else if(selectedItems.length === 1){
         clearDisplayCopyImg();
         deleteImageAPI();
         resetDropArea();
-    } else {
-        alert('Please select an item to delete.');
+        for(i = 0; i < selectedItems.length; i++){
+            deleteImageAPI(selectedItems[i]);
+    
+        }
+        selectedItems = [];
+       
+    }
+    else if(selectedItems.length > 1){
+        confirmationModal.style.display = 'flex';
+        // grid.removeChild(selectedItem);
+        // selectedItem = null;
+        confirmDeleteBtn.addEventListener('click', function() {
+        clearDisplayCopyImg();
+        deleteImageAPI();
+        resetDropArea();
+        for(i = 0; i < selectedItems.length; i++){
+            deleteImageAPI(selectedItems[i]);
+    
+        }
+        selectedItems = [];
+        confirmationModal.style.display = 'none';
+    });
+    cancelDeleteBtn.addEventListener('click', function() {
+        confirmationModal.style.display = 'none';
+    });
     }
 });
 });
 //---------------------- function  that resets the img-view area ------------------------------
 
-function resetDropArea() {
-    imageView.innerHTML = `
-        <i class="fa-solid fa-image" style="font-size: 150px; font-family: Font Awesome 4 free;"></i>
-        <p>Click here <br> to upload image</p>
-    `;
-    imageView.style.border = '2px dashed #000000';
+function resetDropArea(){
+    
+    imageView.innerHTML = "<i class='fa fa-photo' style='font-size: 150px';></i><p>Click here <br> to upload image</p>";
+    imageView.style.border = "2px dashed #a8a8a8";
+   
+
+
 }
 //---------------
 
